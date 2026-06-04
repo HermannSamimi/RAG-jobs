@@ -1,0 +1,107 @@
+# ── Shared Airflow config ──────────────────────────────────────────────────────
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+    AIRFLOW__WEBSERVER__SECRET_KEY: "rag-jobs-secret-key"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    PYTHONPATH: "/opt/airflow/project"
+    # Qdrant Cloud — values come from .env
+    QDRANT_HOST: "${QDRANT_HOST}"
+    QDRANT_API_KEY: "${QDRANT_API_KEY}"
+    APIFY_API_KEY: "${APIFY_API_KEY}"
+    LLM_API_KEY: "${LLM_API_KEY}"
+    LLM_EMBEDDINGS_ENDPOINT: "${LLM_EMBEDDINGS_ENDPOINT}"
+    EMBEDDING_MODEL: "${EMBEDDING_MODEL:-qwen3-embedding:8b}"
+    QDRANT_JOBS_COLLECTION_NAME: "${QDRANT_JOBS_COLLECTION_NAME:-knowledge_base}"
+    QDRANT_JOBS_VECTOR_SIZE: "${QDRANT_JOBS_VECTOR_SIZE:-4096}"
+    QDRANT_JOBS_DISTANCE: "${QDRANT_JOBS_DISTANCE:-Cosine}"
+    QDRANT_CHAT_HISTORY_COLLECTION_NAME: "${QDRANT_CHAT_HISTORY_COLLECTION_NAME:-chat_history}"
+    TENANT_FIELD: "${TENANT_FIELD:-user_id}"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - .:/opt/airflow/project
+    - airflow_logs:/opt/airflow/logs
+
+
+services:
+
+  # ── Airflow metadata DB ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: rag-jobs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Airflow bootstrap (runs once, then exits) ────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: rag-jobs-airflow-init
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - bash
+      - -c
+      - |
+        airflow db migrate
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true
+
+  # ── Airflow webserver  (UI at :8080) ─────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: rag-jobs-airflow-webserver
+    restart: unless-stopped
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ── Airflow scheduler (runs DAGs) ─────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: rag-jobs-airflow-scheduler
+    restart: unless-stopped
+    command: scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ── Streamlit UI  (:2312) ─────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-jobs-app
+    restart: unless-stopped
+    ports:
+      - "2312:2312"
+    env_file:
+      - .env
+
+
+volumes:
+  postgres_data:
+  airflow_logs:
