@@ -31,35 +31,9 @@ Three core pillars:
 
 ## Architecture
 
-```mermaid
-architecture-beta
-    group ingestion(logos:apache-airflow)[Data Ingestion]
-    group llm(devicon:ollama)[Ollama]
-    group vector(logos:qdrant)[Qdrant Cloud]
+# Architecture
 
-    service apify(logos:apify)[Apify Actor] in ingestion
-    service airflow(logos:airflow-icon)[Apache Airflow] in ingestion
-    service pg(logos:postgresql)[PostgreSQL] in ingestion
-
-    service embed(logos:openai)[Qwen3 Embedding 8B] in llm
-    service gemma(logos:google-icon)[Gemma 3 27B] in llm
-
-    service kb(logos:qdrant)[Knowledge Base Vectors] in vector
-
-    service ui(logos:streamlit)[Streamlit UI]
-
-    apify:R -- L:airflow
-    airflow:B -- T:pg
-
-    airflow:R -- L:embed
-    embed:R -- L:kb
-
-    ui:R -- L:gemma
-    ui:R -- L:kb
-    ui:R -- L:pg
-
-    kb:B -- T:gemma
-```
+![Architecture](/Architecture_Diagram.gif)
 
 ---
 
