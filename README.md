@@ -34,6 +34,7 @@ Automated hourly ingestion · Semantic vector search · Streaming LLM responses 
 - [Local Development](#local-development)
 - [Design Decisions](#design-decisions)
 - [Author](#author)
+- [Infrastructure Partner](#infrastructure-partner)
 
 ---
 
@@ -697,7 +698,7 @@ flowchart LR
     H --> Qdrant
 
     classDef start fill:#FDE68A,stroke:#D97706,stroke-width:1px,color:#78350F
-    classDef end fill:#FEE2E2,stroke:#EF4444,stroke-width:1px,color:#7F1D1D
+    classDef uiOut fill:#FEE2E2,stroke:#EF4444,stroke-width:1px,color:#7F1D1D
     classDef retrieve fill:#EDE9FE,stroke:#8B5CF6,stroke-width:1px,color:#4C1D95
     classDef memory fill:#DBEAFE,stroke:#3B82F6,stroke-width:1px,color:#1E3A8A
     classDef generate fill:#FFEDD5,stroke:#F97316,stroke-width:1px,color:#7C2D12
@@ -706,7 +707,7 @@ flowchart LR
     classDef llm fill:#FEF3C7,stroke:#F59E0B,stroke-width:1px,color:#78350F
 
     class A start
-    class I end
+    class I uiOut
     class B,C retrieve
     class D memory
     class E,F generate
@@ -918,3 +919,21 @@ Portfolio project demonstrating end-to-end data engineering: pipeline orchestrat
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?logo=linkedin&logoColor=white)](https://linkedin.com/in/your-profile)
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-181717?logo=github&logoColor=white)](https://github.com/your-username)
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-Profile-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/HermannS11)
+
+---
+
+## Infrastructure Partner
+
+LLM inference for this project — **embeddings** (`qwen3-embedding:8b`) and **chat completions** (`gemma3:27b`) — runs on infrastructure provided by **[Tempico Labs](https://tempico.com)**.
+
+[Tempico Labs](https://tempico.com) offers managed **Platform-as-a-Service** with usage-based pricing, smart autoscaling, and enterprise-grade security — a strong fit for production RAG workloads that need reliable, OpenAI-compatible model endpoints without operating GPU clusters yourself.
+
+| | |
+|---|---|
+| **What powers JobRAG** | OpenAI-compatible embedding + chat APIs |
+| **Models** | `qwen3-embedding:8b` · `gemma3:27b` |
+| **Provider** | [Tempico Labs](https://tempico.com) — PaaS & professional services |
+
+[![Powered by Tempico Labs](https://img.shields.io/badge/Powered%20by-Tempico%20Labs-111827?style=for-the-badge)](https://tempico.com)
+
+> **Interested in similar infrastructure?** Explore [Tempico Labs PaaS](https://tempico.com), [GPU-accelerated computing](https://tempico.com), and [DevOps / migration support](https://tempico.com) for your own AI and data projects.
