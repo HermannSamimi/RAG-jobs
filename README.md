@@ -1,200 +1,241 @@
-# JobRAG — AI Job Search Assistant for Software Engineers
+# JobRAG — AI-Powered Job Search Assistant
 
-An end-to-end **RAG (Retrieval-Augmented Generation)** pipeline focused on **Software Engineer** jobs.  
-Job listings are automatically fetched every hour via Apache Airflow, stored as vector embeddings in Qdrant, and made available through a Streamlit chat UI powered by a self-hosted LLM.
+### End-to-end RAG pipeline for **Software Engineer** jobs in **Berlin, Germany**.  
+### Automated hourly ingestion · Vector search · Streaming LLM responses · Fully containerised.
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.10-017CEE?logo=apacheairflow&logoColor=white)
+![Qdrant](https://img.shields.io/badge/Qdrant-Cloud-FF4F64?logo=qdrant&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-Chat%20UI-FF4B4B?logo=streamlit&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+![Apify](https://img.shields.io/badge/Apify-Scraper-00B780?logo=apify&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20Inference-black?logo=ollama&logoColor=white)
+![qwen3-embedding](https://img.shields.io/badge/qwen3--embedding-8b%20·%204096d-7C3AED)
+![gemma3](https://img.shields.io/badge/gemma3-27b-F97316)
+![pytest](https://img.shields.io/badge/pytest-tested-0A9EDC?logo=pytest&logoColor=white)
+![Mermaid](https://img.shields.io/badge/Mermaid-Diagrams-FF3670)
+
+---
+
+## Overview
+
+JobRAG is a production-grade **Retrieval-Augmented Generation (RAG)** system that automatically collects **Software Engineer** job listings from **LinkedIn Berlin** every hour, embeds them into a vector database, and exposes a conversational AI interface for natural-language job market queries.
+
+Three core pillars:
+- **Automated data pipeline** — Apache Airflow orchestrates hourly ingestion via the Apify scraping platform
+- **Semantic search** — Qdrant Cloud stores 4096-dimensional job embeddings for high-quality vector retrieval
+- **Conversational AI** — A streaming LLM (Gemma3:27b via Ollama) generates grounded answers from retrieved job context
 
 ---
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  Apache Airflow  (every hour)                                                │
-│                                                                              │
-│  DAG: ingest_software_engineer_jobs                                          │
-│  ├── ingest__germany__berlin        ─┐                                       │
-│  ├── ingest__germany__munich         │                                       │
-│  ├── ingest__uk__london              │  Apify Actor → embed (qwen3-8b)       │
-│  ├── ingest__usa__new_york           │  → upsert into Qdrant (deduplicated)  │
-│  ├── ingest__netherlands__amsterdam  │                                       │
-│  └── ingest__canada__toronto        ─┘                                       │
-└──────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-                              ┌─────────────────┐
-                              │     Qdrant       │
-                              │  knowledge_base  │  ← job embeddings (512d)
-                              │  chat_history    │  ← per-session turns
-                              └─────────────────┘
-                                        │
-                                        ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  Streamlit UI  :2312                                                         │
-│                                                                              │
-│  User query → embed → vector search → LLM (gemma3:27b) → streaming answer  │
-│  Filters: job title · country · city · top-k                                │
-└──────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+architecture-beta
+    group ingestion(logos:apache-airflow)[Data Ingestion]
+    group llm(devicon:ollama)[Ollama]
+    group vector(logos:qdrant)[Qdrant Cloud]
+
+    service apify(logos:apify)[Apify Actor] in ingestion
+    service airflow(logos:airflow-icon)[Apache Airflow] in ingestion
+    service pg(logos:postgresql)[PostgreSQL] in ingestion
+
+    service embed(logos:openai)[Qwen3 Embedding 8B] in llm
+    service gemma(logos:google-icon)[Gemma 3 27B] in llm
+
+    service kb(logos:qdrant)[Knowledge Base Vectors] in vector
+
+    service ui(logos:streamlit)[Streamlit UI]
+
+    apify:R -- L:airflow
+    airflow:B -- T:pg
+
+    airflow:R -- L:embed
+    embed:R -- L:kb
+
+    ui:R -- L:gemma
+    ui:R -- L:kb
+    ui:R -- L:pg
+
+    kb:B -- T:gemma
 ```
 
 ---
 
-## Services
+## Features
 
-| Service | Port | Description |
-|---|---|---|
-| **Streamlit app** | `2312` | Chat UI for querying jobs |
-| **Airflow webserver** | `8080` | DAG monitoring & manual triggers |
-| **Qdrant** | `6333` | Vector database |
-| **Postgres** | — (internal) | Airflow metadata store |
+| Feature | Detail |
+|---|---|
+| **Automated ingestion** | Airflow DAG runs every hour, fetches 50 fresh listings from LinkedIn Berlin |
+| **Deduplication** | Deterministic UUID from `job_id` prevents duplicate entries |
+| **Semantic search** | 4096-dim dense vectors, Cosine similarity, top-5 retrieval |
+| **Streaming responses** | Token-by-token output via SSE from the LLM API |
+| **Conversation memory** | Per-session chat history stored in Qdrant, injected into every prompt |
+| **Source transparency** | Each answer links back to the exact job listings it used |
+| **Fully containerised** | One `docker compose up` starts the entire stack |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Orchestration | Apache Airflow 2.10 |
-| Data source | Apify Actor `3HJWd9KfGyItAD5N9` (LinkedIn/Indeed via JobSpy) |
-| Vector DB | Qdrant |
-| Embeddings | `qwen3-embedding:8b` (512d, Cosine) |
-| LLM | `gemma3:27b` via OpenAI-compatible API |
-| UI | Streamlit |
-| Containerisation | Docker + Docker Compose |
-| Language | Python 3.11 |
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Orchestration** | Apache Airflow 2.10 | Hourly DAG scheduling |
+| **Data source** | [Apify Actor `3HJWd9KfGyItAD5N9`](https://console.apify.com/actors/3HJWd9KfGyItAD5N9/source) | LinkedIn job scraping |
+| **Vector database** | Qdrant Cloud | Embedding storage & retrieval |
+| **Embedding model** | `qwen3-embedding:8b` (4096d) via Ollama | Semantic representation of job descriptions |
+| **LLM** | `gemma3:27b` via Ollama | Answer generation |
+| **LLM API** | OpenAI-compatible endpoint | Inference backend |
+| **UI** | Streamlit | Conversational chat interface |
+| **Metadata DB** | PostgreSQL 15 | Airflow internal state |
+| **Containerisation** | Docker + Docker Compose | Full-stack deployment |
+| **Language** | Python 3.11 | — |
+| **Testing** | pytest | Unit & integration tests |
+
+---
+
+## Services
+
+| Container | Port | Description |
+|---|---|---|
+| `rag-jobs-app` | **2312** | Streamlit chat UI |
+| `rag-jobs-airflow-webserver` | **8080** | Airflow monitoring UI |
+| `rag-jobs-airflow-scheduler` | — | DAG execution engine |
+| `rag-jobs-postgres` | — | Airflow metadata (internal) |
+
+---
+
+## Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- Apify account with API key ([apify.com](https://apify.com))
+- OpenAI-compatible LLM API key (embeddings + completions endpoints)
+- Qdrant Cloud account ([cloud.qdrant.io](https://cloud.qdrant.io)) — free tier is sufficient
+- Ollama running locally with `qwen3-embedding:8b` and `gemma3:27b` pulled
 
 ---
 
 ## Quick Start
 
-### 1 — Prerequisites
+### 1. Clone the repository
 
-- Docker Desktop installed and running
-- `.env` file configured (see below)
+```bash
+git clone https://github.com/<your-username>/rag-jobs.git
+cd rag-jobs
+```
 
-### 2 — Configure `.env`
+### 2. Configure environment variables
+
+Create a `.env` file in the project root:
 
 ```env
-APIFY_API_KEY=your_apify_key
+# Apify
+APIFY_API_KEY=your_apify_api_key
 
-LLM_COMPLETIONS_ENDPOINT=https://api.tempico.com/v1/chat/completions
-LLM_EMBEDDINGS_ENDPOINT=https://api.tempico.com/v1/embeddings
-LLM_API_KEY=your_llm_key
+# LLM API (OpenAI-compatible — Ollama)
+LLM_COMPLETIONS_ENDPOINT=https://your-api/v1/chat/completions
+LLM_EMBEDDINGS_ENDPOINT=https://your-api/v1/embeddings
+LLM_API_KEY=your_llm_api_key
 EMBEDDING_MODEL=qwen3-embedding:8b
 COMPLETIONS_MODEL=gemma3:27b
 
-QDRANT_API_KEY=QDRANT_API_KEY
-QDRANT_HOST=http://localhost:6333
+# Qdrant Cloud
+QDRANT_HOST=https://your-cluster.cloud.qdrant.io
+QDRANT_API_KEY=your_qdrant_api_key
 QDRANT_JOBS_COLLECTION_NAME=knowledge_base
-QDRANT_JOBS_VECTOR_SIZE=512
+QDRANT_JOBS_VECTOR_SIZE=4096
 QDRANT_JOBS_DISTANCE=Cosine
 QDRANT_CHAT_HISTORY_COLLECTION_NAME=chat_history
 TENANT_FIELD=user_id
 ```
 
-### 3 — Build & Start
+### 3. Start the stack
 
 ```bash
 docker compose up --build -d
 ```
 
-This starts: Postgres → Qdrant → Airflow init → Airflow webserver + scheduler → Streamlit.  
-First build takes ~5 minutes (downloads Airflow image and installs packages).
+First build takes ~3–5 minutes.
 
-### 4 — Check everything is up
+### 4. Verify all services are running
 
 ```bash
 docker compose ps
 ```
 
-All 5 containers should show `running`:
+Expected output:
 
 ```
-rag-jobs-postgres             running
-rag-jobs-qdrant               running
-rag-jobs-airflow-init         exited (0)   ← expected, runs once
+NAME                          STATUS
+rag-jobs-postgres             running (healthy)
+rag-jobs-airflow-init         exited (0)        ← expected: runs once
 rag-jobs-airflow-webserver    running
 rag-jobs-airflow-scheduler    running
 rag-jobs-app                  running
 ```
 
-### 5 — Trigger first ingestion manually
+### 5. Trigger the first ingestion
 
 The DAG runs automatically every hour. To populate the database immediately:
 
 ```bash
 docker exec rag-jobs-airflow-scheduler \
-  airflow dags trigger ingest_software_engineer_jobs
+  airflow dags trigger ingest_software_engineer_jobs_berlin
 ```
 
-Watch progress in the **Airflow UI → http://localhost:8080** (login: `admin` / `admin`).
+Watch the run at **[http://localhost:8080](http://localhost:8080)** → login: `admin` / `admin`.
 
-### 6 — Open the chat app
+### 6. Start chatting
 
-[http://localhost:2312](http://localhost:2312)
-
-The database fills up automatically every hour from this point on.
+Open **[http://localhost:2312](http://localhost:2312)** once the DAG run turns green.
 
 ---
 
-## All Commands
+## Command Reference
 
-### Project lifecycle
+### Stack management
 
 ```bash
-# Start everything
+# Start all services (detached)
 docker compose up --build -d
 
-# Stop everything (data is preserved in volumes)
+# Stop all services (data preserved)
 docker compose down
 
-# Stop and wipe all data (clean slate)
+# Stop and delete all data (clean slate)
 docker compose down -v
 
 # View logs for a specific service
-docker compose logs -f airflow-scheduler
 docker compose logs -f app
-docker compose logs -f qdrant
+docker compose logs -f airflow-scheduler
 ```
 
 ### Airflow
 
 ```bash
-# Trigger ingestion manually right now
+# Trigger ingestion manually
 docker exec rag-jobs-airflow-scheduler \
-  airflow dags trigger ingest_software_engineer_jobs
+  airflow dags trigger ingest_software_engineer_jobs_berlin
 
-# Check DAG run status
+# List recent DAG runs
 docker exec rag-jobs-airflow-scheduler \
-  airflow dags list-runs -d ingest_software_engineer_jobs
+  airflow dags list-runs -d ingest_software_engineer_jobs_berlin
 
-# Pause the DAG (stop scheduled runs)
+# Pause scheduled runs
 docker exec rag-jobs-airflow-scheduler \
-  airflow dags pause ingest_software_engineer_jobs
+  airflow dags pause ingest_software_engineer_jobs_berlin
 
-# Resume the DAG
+# Resume scheduled runs
 docker exec rag-jobs-airflow-scheduler \
-  airflow dags unpause ingest_software_engineer_jobs
+  airflow dags unpause ingest_software_engineer_jobs_berlin
 ```
 
-### Qdrant inspection
+### Rebuild after code changes
 
 ```bash
-# Count jobs in the database
-curl http://localhost:6333/collections/knowledge_base | python3 -m json.tool
-
-# List all collections
-curl http://localhost:6333/collections | python3 -m json.tool
-```
-
-### Rebuilding after code changes
-
-```bash
-# Rebuild a specific service only
 docker compose build app
-docker compose build airflow-webserver airflow-scheduler
-
-# Restart a service without full rebuild
-docker compose restart app
+docker compose up -d --no-deps app
 ```
 
 ---
@@ -203,79 +244,186 @@ docker compose restart app
 
 ```
 rag-jobs/
-├── app.py                       # Streamlit chat UI  (:2312)
-├── config.py                    # Centralised env-var config
-├── embedder.py                  # Shared embedding utility
 │
-├── dags/
-│   └── ingest_jobs_dag.py       # Airflow DAG — @hourly, 6 cities
+├── app.py                             # Streamlit chat UI
+├── config.py                          # Centralised configuration (env vars)
+├── embedder.py                        # Shared text embedding utility
 │
 ├── ingestion/
-│   ├── apify_fetcher.py         # Calls Apify actor
-│   ├── qdrant_store.py          # Collection setup + upsert
-│   └── ingest.py                # Core ingestion logic (called by DAG)
+│   ├── apify_fetcher.py               # Calls Apify Actor to fetch job listings
+│   ├── qdrant_store.py                # Collection management + upsert logic
+│   └── ingest.py                      # Core pipeline: fetch → embed → store
 │
 ├── rag/
-│   ├── retriever.py             # Vector search with filters
-│   ├── llm_client.py            # Streaming chat completions
-│   ├── chat_history.py          # Per-session history in Qdrant
-│   └── pipeline.py              # Orchestrates retrieve → prompt → stream
+│   ├── retriever.py                   # Vector search against Qdrant
+│   ├── llm_client.py                  # Streaming chat completions (SSE)
+│   ├── chat_history.py                # Per-session memory in Qdrant
+│   └── pipeline.py                    # Orchestrates retrieve → prompt → stream
 │
-├── Dockerfile                   # Streamlit app image
-├── Dockerfile.airflow           # Airflow image + project deps
-├── docker-compose.yml           # All 5 services
-└── requirements.txt             # Python dependencies
+├── tests/
+│   ├── conftest.py                    # Shared fixtures
+│   ├── test_embedder.py               # Embedding output shape & type
+│   ├── ingestion/
+│   │   ├── test_apify_fetcher.py      # API response parsing, error handling
+│   │   └── test_qdrant_store.py       # Upsert, deduplication
+│   └── rag/
+│       ├── test_retriever.py          # Vector search result structure
+│       ├── test_pipeline.py           # Full RAG pipeline (mocked LLM + Qdrant)
+│       └── test_chat_history.py       # Session isolation, ordering
+│
+├── dags/
+│   └── ingest_jobs_dag.py             # Airflow DAG — @hourly, Berlin only
+│
+├── Dockerfile                         # Streamlit app image (Python 3.11)
+├── Dockerfile.airflow                 # Airflow image + ingestion dependencies
+├── docker-compose.yml                 # Full stack: Airflow + Postgres + App
+├── requirements.txt                   # App dependencies
+├── requirements-ingestion.txt         # Ingestion-only dependencies (lightweight)
+└── requirements-dev.txt               # Dev/test dependencies (pytest, mocks)
 ```
 
 ---
 
-## Airflow DAG Details
+## How the RAG Pipeline Works
 
-**DAG ID:** `ingest_software_engineer_jobs`  
+```mermaid
+flowchart LR
+    A["User sends a message"]
+    B["Embed message\nqwen3-embedding:8b → 4096-dim vector"]
+    C["Query knowledge_base\nretrieve top-5 semantically similar jobs"]
+    D["Retrieve last N turns\nfrom chat_history"]
+    E["Build LLM prompt\n[System] You are a job search assistant\n[History] last N conversation turns\n[User] job context × 5 + question"]
+    F["Stream response\nGemma3:27b token by token via Ollama"]
+    G["Save to chat_history\nuser message + assistant response"]
+    H["Display answer\n+ expandable source job cards"]
+
+    A --> B --> C --> D --> E --> F --> G --> H
+```
+
+---
+
+## Testing
+
+Tests are written with **pytest** and live in `tests/`, mirroring the source tree.
+
+### Run all tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+### Run by module
+
+```bash
+pytest tests/rag/
+pytest tests/ingestion/
+pytest -v                  # verbose output
+pytest --tb=short          # compact tracebacks
+```
+
+### Test coverage
+
+| File | What it covers |
+|---|---|
+| `tests/test_embedder.py` | Output shape, vector dimensionality (4096), type assertions |
+| `tests/ingestion/test_apify_fetcher.py` | Apify API response parsing, missing-field handling, HTTP errors |
+| `tests/ingestion/test_qdrant_store.py` | Collection creation, upsert, deduplication by `job_id` |
+| `tests/rag/test_retriever.py` | Vector search result structure, top-k count, score thresholds |
+| `tests/rag/test_pipeline.py` | Full RAG pipeline with mocked LLM + Qdrant — prompt assembly, streaming |
+| `tests/rag/test_chat_history.py` | Session isolation, retrieval ordering by timestamp |
+
+### `conftest.py` fixtures
+
+```python
+# tests/conftest.py
+import pytest
+from unittest.mock import MagicMock
+
+@pytest.fixture
+def mock_qdrant_client():
+    client = MagicMock()
+    client.search.return_value = []
+    return client
+
+@pytest.fixture
+def sample_job():
+    return {
+        "job_id": "abc123",
+        "title": "Senior Software Engineer",
+        "company": "Acme GmbH",
+        "location": "Berlin, Germany",
+        "description": "We are looking for a Senior Software Engineer...",
+        "job_url": "https://linkedin.com/jobs/view/abc123",
+    }
+```
+
+---
+
+## Airflow DAG
+
+**ID:** `ingest_software_engineer_jobs_berlin`  
 **Schedule:** `@hourly`  
-**Job title:** `software engineer` (fixed)  
-**Locations:**
+**Task:** `ingest__germany__berlin`  
+**Jobs per run:** 50  
+**Retries:** 2 (3-minute delay)  
+**Timeout:** 20 minutes per task  
 
-| Task ID | Country | City |
-|---|---|---|
-| `ingest__germany__berlin` | germany | berlin |
-| `ingest__germany__munich` | germany | munich |
-| `ingest__uk__london` | uk | london |
-| `ingest__usa__new_york` | usa | new york |
-| `ingest__netherlands__amsterdam` | netherlands | amsterdam |
-| `ingest__canada__toronto` | canada | toronto |
-
-Each task fetches 50 jobs, embeds descriptions (title fallback when description is null), and upserts into Qdrant with deduplication via `job_id`.
+Each run fetches the 50 most recent Software Engineer listings in Berlin from LinkedIn via the [Apify Actor `3HJWd9KfGyItAD5N9`](https://console.apify.com/actors/3HJWd9KfGyItAD5N9/source), embeds title and description with `qwen3-embedding:8b`, and upserts into Qdrant — re-ingesting the same job ID is a no-op.
 
 ---
 
 ## Qdrant Collections
 
-### `knowledge_base` (job embeddings)
-- **Vector:** 512-dim, Cosine — embedded from `title + description`
-- **Indexed payload fields:** `country`, `is_remote`, `seniority_level`, `employment_type`, `site`, `language`
+### `knowledge_base`
 
-### `chat_history` (conversation memory)
-- **Vector:** 512-dim — embedded from message content
-- **Indexed payload fields:** `user_id`, `session_id`, `role`
-- Multi-tenant: each browser session gets its own `user_id`
+Stores vectorised Software Engineer job listings for Berlin.
+
+| Field | Type | Notes |
+|---|---|---|
+| **vector** | 4096-dim float | Embedded from `title + description` |
+| `title` | string | Job title |
+| `company` | string | Hiring company |
+| `location` | string | Berlin, Germany |
+| `description` | string | Full job description (primary RAG source) |
+| `job_url` | string | Direct link to the listing |
+| `seniority_level` | keyword (indexed) | e.g. Entry level, Mid-Senior level |
+| `employment_type` | keyword (indexed) | e.g. Full-time, Part-time |
+
+### `chat_history`
+
+Stores conversation turns per user session.
+
+| Field | Type | Notes |
+|---|---|---|
+| **vector** | 4096-dim float | Embedded from message content |
+| `user_id` | keyword (indexed) | Browser session tenant ID |
+| `session_id` | keyword (indexed) | Conversation scope |
+| `role` | keyword (indexed) | `"user"` or `"assistant"` |
+| `content` | string | Raw message text |
+| `timestamp` | string | ISO 8601 — used for ordering |
 
 ---
 
-## Deployment Notes
+## Design Decisions
 
-- LLM and embedding endpoints are **external** — no GPU needed on the Docker host.
-- Qdrant, Postgres, and job data all persist across restarts via named Docker volumes.
-- To use **Qdrant Cloud** instead of local: update `QDRANT_HOST` and `QDRANT_API_KEY` in `.env` and remove the `qdrant` service from `docker-compose.yml`.
-- The `airflow-init` container exits with code 0 after first-time setup — this is expected.
+**Why Qdrant Cloud?** Managed infrastructure means no storage configuration, backups, or scaling work. The free tier handles thousands of job embeddings comfortably.
+
+**Why embed title + description?** The description is the richest source of signal for semantic matching. When descriptions are missing (common with LinkedIn's API), the title alone still produces meaningful embeddings.
+
+**Why Airflow over a cron job?** Airflow gives visibility into run history, retry logic, and alerting — essential for a pipeline that depends on an external API.
+
+**Why store chat history in Qdrant?** Keeping all persistent state in one system simplifies the architecture.
+
+**Why Ollama?** Local inference with `qwen3-embedding:8b` and `gemma3:27b` keeps costs predictable and data private.
 
 ---
 
 ## Author
 
-Built as a senior data engineer portfolio project showcasing:
-- End-to-end RAG pipeline design
-- Automated data orchestration with Apache Airflow
-- Vector search with Qdrant
-- Streaming LLM integration
-- Production-ready containerisation
+**Hermann Samimi** — Senior Data Engineer  
+Portfolio project demonstrating end-to-end data engineering: pipeline orchestration, vector databases, LLM integration, and containerised deployment.
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?logo=linkedin&logoColor=white)](https://linkedin.com/in/your-profile)
+[![GitHub](https://img.shields.io/badge/GitHub-Follow-181717?logo=github&logoColor=white)](https://github.com/your-username)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-Profile-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/HermannS11)
