@@ -155,55 +155,63 @@ flowchart TB
     subgraph Docker["🐳 Docker Compose"]
         direction TB
 
-        subgraph UI["Presentation · port 2312"]
-            App["💼 rag-jobs-app<br/>Streamlit chat UI"]
-        end
-
-        subgraph Airflow["Orchestration · port 8080"]
+        subgraph Top["① Presentation & orchestration"]
             direction LR
-            Web["🌐 Webserver"]
-            Sched["⏱️ Scheduler"]
-            PG[("🗄️ PostgreSQL 15")]
-            Web -.- Sched
-            Web --> PG
-            Sched --> PG
+            App["💼 rag-jobs-app<br/>Streamlit · :2312"]
+            subgraph Airflow["Airflow · :8080"]
+                direction TB
+                subgraph AFRow["Services"]
+                    direction LR
+                    Web["🌐 Webserver"]
+                    Sched["⏱️ Scheduler"]
+                end
+                PG[("🗄️ PostgreSQL 15")]
+                Web --> PG
+                Sched --> PG
+            end
         end
 
-        subgraph Pipelines["Application code"]
+        subgraph Mid["② Application pipelines"]
             direction LR
 
             subgraph Ingest["📥 Ingestion"]
-                direction LR
+                direction TB
                 I1["apify_fetcher"] --> I2["embedder"] --> I3["qdrant_store"]
             end
 
             subgraph Query["💬 RAG Query"]
-                direction LR
-                Q1["retriever"] --> Q3["pipeline"] --> Q4["llm_client"]
-                Q2["chat_history"] -.-> Q3
+                direction TB
+                subgraph QRow[" "]
+                    direction LR
+                    Q1["retriever"]
+                    Q2["chat_history"]
+                end
+                Q3["pipeline"]
+                Q4["llm_client"]
+                Q1 --> Q3
+                Q2 -.-> Q3
+                Q3 --> Q4
             end
         end
     end
 
-    subgraph External["☁️ External services"]
+    subgraph External["③ External services"]
         direction LR
         Apify["🕷️ Apify<br/>LinkedIn scraper"]
-        Ollama["🦙 Ollama API<br/>4096d embed · chat SSE"]
+        Ollama["🦙 Ollama API<br/>embed · chat SSE"]
         Qdrant["🔍 Qdrant Cloud<br/>knowledge_base · chat_history"]
     end
 
     User -->|chat| App
     User -.->|monitor| Web
-    Sched -->|hourly DAG| I1
-    App --> Q3
-    App --> Qdrant
+    Sched -->|hourly| Ingest
+    App --> Query
 
-    I1 --> Apify
-    I2 --> Ollama
-    I3 -->|upsert| Qdrant
-    Q1 --> Qdrant
-    Q2 --> Qdrant
-    Q4 --> Ollama
+    Ingest --> Apify
+    Ingest --> Ollama
+    Ingest -->|upsert| Qdrant
+    Query --> Ollama
+    Query -->|read/write| Qdrant
 
     classDef user fill:#FDE68A,stroke:#D97706,stroke-width:1px,color:#78350F
     classDef ui fill:#FEE2E2,stroke:#EF4444,stroke-width:1px,color:#7F1D1D
@@ -257,52 +265,49 @@ config:
     .node rect, .node circle, .node ellipse, .node polygon { stroke-width: 1px !important; }
 ---
 flowchart TB
-    Env["⚙️ .env<br/>API keys · endpoints · Qdrant config"]
-
-    subgraph Images["Container images"]
+    subgraph L1["① Build & configuration"]
         direction LR
         ImgApp["📦 Dockerfile<br/>Python 3.11 + Streamlit"]
-        ImgAF["📦 Dockerfile.airflow<br/>Airflow 2.10 + ingestion deps"]
+        Env["⚙️ .env<br/>API keys · endpoints · Qdrant"]
+        ImgAF["📦 Dockerfile.airflow<br/>Airflow 2.10 + ingestion"]
     end
 
-    subgraph Runtime["Running containers"]
-        direction TB
+    subgraph L2["② Running containers"]
+        direction LR
 
-        subgraph AppSvc["Chat service"]
-            A["💼 rag-jobs-app<br/>:2312"]
-        end
+        A["💼 rag-jobs-app<br/>:2312"]
 
-        subgraph AirflowSvc["Airflow stack"]
-            direction LR
+        subgraph Airflow["Airflow stack"]
+            direction TB
             I["🚀 airflow-init<br/>one-shot bootstrap"]
-            W["🌐 airflow-webserver<br/>:8080"]
-            S["⏱️ airflow-scheduler"]
+            subgraph AFWorkers["Services"]
+                direction LR
+                W["🌐 webserver · :8080"]
+                S["⏱️ scheduler"]
+            end
             P[("🗄️ rag-jobs-postgres")]
+            I -->|bootstrap DB| P
+            W --> P
+            S --> P
         end
     end
 
-    subgraph Mounts["Shared volumes"]
+    subgraph L3["③ Shared volumes"]
         direction LR
         Code["📁 Project source<br/>/opt/airflow/project"]
         DAGs["📁 DAGs<br/>/opt/airflow/dags"]
         VolPG["💾 postgres_data"]
-        VolLogs["📋 airflow_logs"]
     end
 
-    Env --> A
-    Env --> W
-    Env --> S
-    ImgApp -.-> A
-    ImgAF -.-> W
-    ImgAF -.-> S
-    ImgAF -.-> I
-    I -->|migrate and admin user| P
-    W --> P
-    S --> P
+    ImgApp --> A
+    ImgAF -.-> Airflow
+    Env -.-> A
+    Env -.-> Airflow
+
+    A --> Code
     S --> Code
     S --> DAGs
-    A --> Code
-    P -.- VolPG
+    P --> VolPG
 
     classDef config fill:#FEF3C7,stroke:#F59E0B,stroke-width:1px,color:#78350F
     classDef image fill:#E0F2FE,stroke:#0284C7,stroke-width:1px,color:#0C4A6E
@@ -316,7 +321,7 @@ flowchart TB
     class A app
     class I,W,S af
     class P db
-    class Code,DAGs,VolPG,VolLogs vol
+    class Code,DAGs,VolPG vol
 ```
 
 ---
@@ -354,27 +359,44 @@ flowchart TB
 
 ## Project Structure
 
-```
-rag-jobs/
-├── app.py                      # Streamlit chat UI
-├── config.py                   # Centralised env-based configuration
-├── embedder.py                 # OpenAI-compatible embedding client
-├── ingestion/
-│   ├── apify_fetcher.py        # Fetch job listings from Apify
-│   ├── ingest.py               # Pipeline: fetch → embed → store
-│   └── qdrant_store.py         # Collection management + upsert
-├── rag/
-│   ├── pipeline.py             # Orchestrates retrieve → prompt → stream
-│   ├── retriever.py            # Vector search against Qdrant
-│   ├── llm_client.py           # Streaming chat completions (SSE)
-│   └── chat_history.py         # Per-session memory in Qdrant
-├── dags/
-│   └── ingest_jobs_dag.py      # Airflow DAG — @hourly, Berlin
-├── Dockerfile                  # Streamlit app image
-├── Dockerfile.airflow          # Airflow + ingestion dependencies
-├── docker-compose.yml          # Full stack definition
-├── requirements.txt            # App dependencies
-└── requirements-ingestion.txt  # Ingestion-only dependencies (Airflow image)
+```mermaid
+---
+config:
+  treeView:
+    rowIndent: 80
+    lineThickness: 1
+    paddingX: 8
+    paddingY: 7
+    showIcons: true
+  themeVariables:
+    treeView:
+      labelFontSize: '14px'
+      labelColor: '#526D82'
+      lineColor: '#27374D'
+      iconColor: '#64748B'
+      descriptionColor: '#64748B'
+---
+treeView-beta
+    "rag-jobs/"
+        "app.py ## Streamlit chat UI"
+        "config.py ## centralised env configuration"
+        "embedder.py ## OpenAI-compatible embedding client"
+        "ingestion/ ## fetch · embed · store pipeline"
+            "apify_fetcher.py ## LinkedIn jobs via Apify"
+            "ingest.py ## batch ingestion orchestrator"
+            "qdrant_store.py ## collection setup + upsert"
+        "rag/ ## retrieve · prompt · stream pipeline"
+            "pipeline.py ## RAG orchestrator"
+            "retriever.py ## vector search against Qdrant"
+            "llm_client.py ## streaming chat completions (SSE)"
+            "chat_history.py ## per-session memory in Qdrant"
+        "dags/ ## Airflow scheduling"
+            "ingest_jobs_dag.py ## hourly Berlin SE jobs"
+        "Dockerfile ## Streamlit app image · Python 3.11"
+        "Dockerfile.airflow ## Airflow 2.10 + ingestion deps"
+        "docker-compose.yml ## full stack · app + Airflow + Postgres"
+        "requirements.txt ## app dependencies"
+        "requirements-ingestion.txt ## Airflow image dependencies"
 ```
 
 ---
