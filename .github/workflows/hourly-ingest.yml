@@ -1,0 +1,49 @@
+# Hourly job ingestion — same logic as dags/ingest_jobs_dag.py (Airflow DAG).
+# Replaces the Docker Airflow scheduler for cloud/production deployments.
+name: Hourly job ingestion
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ingest-jobs-berlin
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-ingestion.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-ingestion.txt
+
+      - name: Ingest Software Engineer jobs · Berlin
+        env:
+          APIFY_API_KEY: ${{ secrets.APIFY_API_KEY }}
+          QDRANT_HOST: ${{ secrets.QDRANT_HOST }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_JOBS_COLLECTION_NAME: knowledge_base
+          QDRANT_JOBS_VECTOR_SIZE: "4096"
+          QDRANT_JOBS_DISTANCE: Cosine
+          QDRANT_CHAT_HISTORY_COLLECTION_NAME: chat_history
+          LLM_EMBEDDINGS_ENDPOINT: ${{ secrets.LLM_EMBEDDINGS_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          EMBEDDING_MODEL: qwen3-embedding:8b
+        run: |
+          python -m ingestion.ingest \
+            --title "software engineer" \
+            --country germany \
+            --location berlin \
+            --limit 50 \
+            --language en

@@ -1,3 +1,16 @@
+---
+title: JobRAG
+emoji: 💼
+colorFrom: indigo
+colorTo: purple
+sdk: streamlit
+sdk_version: "1.35.0"
+app_file: app.py
+pinned: false
+license: mit
+short_description: AI job search assistant — RAG over Berlin Software Engineer listings
+---
+
 # JobRAG — AI-Powered Job Search Assistant
 
 End-to-end **Retrieval-Augmented Generation (RAG)** pipeline for **Software Engineer** jobs in **Berlin, Germany**.
@@ -14,6 +27,9 @@ Automated hourly ingestion · Semantic vector search · Streaming LLM responses 
 ![Ollama](https://img.shields.io/badge/Ollama-Local%20Inference-black?logo=ollama&logoColor=white)
 ![qwen3-embedding](https://img.shields.io/badge/qwen3--embedding-8b%20·%204096d-7C3AED)
 ![gemma3](https://img.shields.io/badge/gemma3-27b-F97316)
+![Hugging Face Spaces](https://img.shields.io/badge/🤗-Hugging%20Face%20Spaces-FFD21E)
+
+**Live demo:** [HermannS11/jobrag](https://huggingface.co/spaces/HermannS11/jobrag) · **Deploy guide:** [DEPLOY.md](DEPLOY.md)
 
 ---
 
@@ -26,6 +42,7 @@ Automated hourly ingestion · Semantic vector search · Streaming LLM responses 
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
+- [Cloud Deployment](#cloud-deployment)
 - [Configuration Reference](#configuration-reference)
 - [How It Works](#how-it-works)
 - [Airflow DAG](#airflow-dag)
@@ -345,13 +362,13 @@ flowchart TB
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **Orchestration** | Apache Airflow 2.10 | Hourly DAG scheduling, retries, monitoring |
+| **Orchestration** | Apache Airflow 2.10 (local) · GitHub Actions (cloud) | Hourly ingestion scheduling |
 | **Data source** | [Apify Actor `3HJWd9KfGyItAD5N9`](https://console.apify.com/actors/3HJWd9KfGyItAD5N9/source) | LinkedIn job scraping |
 | **Vector database** | Qdrant Cloud | Job embeddings + chat history |
 | **Embedding model** | `qwen3-embedding:8b` (4096d) via Ollama | Semantic representation of job text |
 | **LLM** | `gemma3:27b` via Ollama | Grounded answer generation |
 | **LLM API** | OpenAI-compatible REST endpoints | Shared interface for embed + chat |
-| **UI** | Streamlit | Conversational chat interface |
+| **UI** | Streamlit · [HF Space](https://huggingface.co/spaces/HermannS11/jobrag) | Conversational chat interface |
 | **Metadata DB** | PostgreSQL 15 | Airflow internal state only |
 | **Containerisation** | Docker + Docker Compose | Full-stack deployment |
 | **Language** | Python 3.11 | Application + DAG code |
@@ -512,6 +529,48 @@ Open [http://localhost:2312](http://localhost:2312) once the DAG run completes s
 
 ---
 
+## Cloud Deployment
+
+For a **public live demo** without running Docker 24/7:
+
+| Component | Platform |
+|---|---|
+| Streamlit chat UI | [Hugging Face Space](https://huggingface.co/spaces/HermannS11/jobrag) |
+| Hourly ingestion | GitHub Actions (`.github/workflows/hourly-ingest.yml`) |
+| Vector DB + LLM | Qdrant Cloud + Tempico Labs API |
+
+```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    lineColor: '#94A3B8'
+  themeCSS: |
+    .edgePath path, .flowchart-link { stroke-width: 1px !important; }
+---
+flowchart LR
+    GH["GitHub Actions<br/>hourly cron"]
+    HF["HF Space<br/>Streamlit UI"]
+    QD[("Qdrant Cloud")]
+    LLM["Tempico LLM API"]
+
+    GH -->|ingest| QD
+    HF <-->|RAG query| QD
+    HF --> LLM
+    GH --> LLM
+```
+
+**Setup (one time):**
+
+1. Add secrets to **GitHub Actions** (ingestion) and **HF Space** (UI) — see [DEPLOY.md](DEPLOY.md)
+2. Create Space `HermannS11/jobrag` linked to this repo, or `git push hf main`
+3. Run ingestion once: **Actions → Hourly job ingestion → Run workflow**
+4. Open the Space URL and chat
+
+The Airflow DAG in `dags/` remains for **local Docker** development; GitHub Actions runs the same `ingestion.ingest` logic in the cloud.
+
+---
+
 ## Configuration Reference
 
 All settings are loaded from environment variables via `config.py`.
@@ -527,7 +586,7 @@ All settings are loaded from environment variables via `config.py`.
 | `QDRANT_HOST` | `http://localhost:6333` | All Qdrant access | Qdrant cluster URL |
 | `QDRANT_API_KEY` | — | All Qdrant access | Qdrant API key |
 | `QDRANT_JOBS_COLLECTION_NAME` | `knowledge_base` | Jobs collection | Job listing collection |
-| `QDRANT_JOBS_VECTOR_SIZE` | `512` | Collection setup | **Set to `4096` for qwen3-embedding** |
+| `QDRANT_JOBS_VECTOR_SIZE` | `4096` | Collection setup | Must match embedding model (4096 for qwen3-embedding) |
 | `QDRANT_JOBS_DISTANCE` | `Cosine` | Collection setup | Vector distance metric |
 | `QDRANT_CHAT_HISTORY_COLLECTION_NAME` | `chat_history` | Chat history | Conversation collection |
 | `TENANT_FIELD` | `user_id` | Chat history | Payload field for user scoping |

@@ -16,7 +16,7 @@ QDRANT_API_KEY = _raw_qdrant_key if _raw_qdrant_key and _raw_qdrant_key != "QDRA
 
 QDRANT_HOST = os.getenv("QDRANT_HOST", "http://localhost:6333")
 QDRANT_JOBS_COLLECTION = os.getenv("QDRANT_JOBS_COLLECTION_NAME", "knowledge_base")
-QDRANT_VECTOR_SIZE = int(os.getenv("QDRANT_JOBS_VECTOR_SIZE", "512"))
+QDRANT_VECTOR_SIZE = int(os.getenv("QDRANT_JOBS_VECTOR_SIZE", "4096"))
 QDRANT_DISTANCE = os.getenv("QDRANT_JOBS_DISTANCE", "Cosine")
 QDRANT_HISTORY_COLLECTION = os.getenv("QDRANT_CHAT_HISTORY_COLLECTION_NAME", "chat_history")
 TENANT_FIELD = os.getenv("TENANT_FIELD", "user_id")
