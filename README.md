@@ -8,7 +8,7 @@ sdk_version: "1.35.0"
 app_file: app.py
 pinned: false
 license: mit
-short_description: AI job search assistant — RAG over Berlin Software Engineer listings
+short_description: RAG job search assistant — Berlin Software Engineer jobs
 ---
 
 # JobRAG — AI-Powered Job Search Assistant

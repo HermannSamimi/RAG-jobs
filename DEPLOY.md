@@ -46,22 +46,30 @@ Copy values from your local `.env` (never commit `.env`).
 5. **License:** MIT
 6. **Create Space**
 
-### Link to GitHub (recommended)
+### Deploy code to the Space
 
-1. In the Space → **Settings → Repository**
-2. Connect **GitHub** → select `HermannSamimi/RAG-jobs`
-3. Branch: `main`
-4. Every push to `main` rebuilds the Space automatically
+**GitHub linking is optional.** If the Space was created from the Streamlit template, it will show `src/` and a template `Dockerfile` until you upload your project files.
 
-### Or push via Git
+**Recommended — upload with the HF CLI** (avoids git binary-file restrictions):
 
 ```bash
 pip install huggingface_hub
-huggingface-cli login   # paste HF token from https://huggingface.co/settings/tokens
+hf auth login   # token from https://huggingface.co/settings/tokens
 
-git remote add hf https://huggingface.co/spaces/HermannS11/jobrag
-git push hf main
+cd /path/to/RAG-jobs-1
+hf upload HermannS11/jobrag . . --repo-type space \
+  --exclude ".env" --exclude ".git/*" --exclude "__pycache__/*" \
+  --commit-message "Deploy JobRAG application"
 ```
+
+Re-run the same command after code changes.
+
+**Alternative — link GitHub** (if available in Space → Settings → Repository):
+
+1. Connect **GitHub** → select `HermannSamimi/RAG-jobs`
+2. Branch: `main`
+
+Note: direct `git push` to HF may be rejected if the repo history contains binary files (e.g. `.gif`). Use `hf upload` instead.
 
 ### Space secrets
 
