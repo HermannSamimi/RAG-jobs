@@ -58,9 +58,12 @@ hf auth login   # token from https://huggingface.co/settings/tokens
 
 cd /path/to/RAG-jobs-1
 hf upload HermannS11/jobrag . . --repo-type space \
-  --exclude ".env" --exclude ".git/*" --exclude "__pycache__/*" \
+  --exclude ".env" --exclude ".git/*" --exclude "Dockerfile*" \
+  --exclude "docker-compose.yml" --exclude "dags/*" --exclude ".github/*" \
   --commit-message "Deploy JobRAG application"
 ```
+
+**Important:** Do not upload `Dockerfile` or the template `src/streamlit_app.py` — HF would run the wrong app. The Space must use **Streamlit SDK** with `app_file: app.py` (set in README frontmatter).
 
 Re-run the same command after code changes.
 

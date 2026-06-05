@@ -1,0 +1,11 @@
+.env
+.git/
+__pycache__/
+*.pyc
+.DS_Store
+Dockerfile
+Dockerfile.airflow
+docker-compose.yml
+dags/
+apifytest.py
+.github/
