@@ -216,44 +216,50 @@ docker compose up -d --no-deps app
 
 ## Project Structure
 
-```
-rag-jobs/
-│
-├── app.py                             # Streamlit chat UI
-├── config.py                          # Centralised configuration (env vars)
-├── embedder.py                        # Shared text embedding utility
-│
-├── ingestion/
-│   ├── apify_fetcher.py               # Calls Apify Actor to fetch job listings
-│   ├── qdrant_store.py                # Collection management + upsert logic
-│   └── ingest.py                      # Core pipeline: fetch → embed → store
-│
-├── rag/
-│   ├── retriever.py                   # Vector search against Qdrant
-│   ├── llm_client.py                  # Streaming chat completions (SSE)
-│   ├── chat_history.py                # Per-session memory in Qdrant
-│   └── pipeline.py                    # Orchestrates retrieve → prompt → stream
-│
-├── tests/
-│   ├── conftest.py                    # Shared fixtures
-│   ├── test_embedder.py               # Embedding output shape & type
-│   ├── ingestion/
-│   │   ├── test_apify_fetcher.py      # API response parsing, error handling
-│   │   └── test_qdrant_store.py       # Upsert, deduplication
-│   └── rag/
-│       ├── test_retriever.py          # Vector search result structure
-│       ├── test_pipeline.py           # Full RAG pipeline (mocked LLM + Qdrant)
-│       └── test_chat_history.py       # Session isolation, ordering
-│
-├── dags/
-│   └── ingest_jobs_dag.py             # Airflow DAG — @hourly, Berlin only
-│
-├── Dockerfile                         # Streamlit app image (Python 3.11)
-├── Dockerfile.airflow                 # Airflow image + ingestion dependencies
-├── docker-compose.yml                 # Full stack: Airflow + Postgres + App
-├── requirements.txt                   # App dependencies
-├── requirements-ingestion.txt         # Ingestion-only dependencies (lightweight)
-└── requirements-dev.txt               # Dev/test dependencies (pytest, mocks)
+```mermaid
+---
+config:
+    treeView:
+        rowIndent: 80
+        lineThickness: 2
+    themeVariables:
+        treeView:
+            labelFontSize: '16px'
+            labelColor: '#4FB7B3'
+            lineColor: '#31326F'
+---
+treeView-beta
+    "rag-jobs/"
+        "app.py · Streamlit chat UI"
+        "config.py · Centralised configuration"
+        "embedder.py · Shared text embedding utility"
+        "ingestion/"
+            "apify_fetcher.py · Fetch job listings from Apify"
+            "qdrant_store.py · Collection management + upsert"
+            "ingest.py · Core pipeline: fetch → embed → store"
+        "rag/"
+            "retriever.py · Vector search against Qdrant"
+            "llm_client.py · Streaming chat completions (SSE)"
+            "chat_history.py · Per-session memory in Qdrant"
+            "pipeline.py · Orchestrates retrieve → prompt → stream"
+        "tests/"
+            "conftest.py · Shared fixtures"
+            "test_embedder.py · Embedding shape & type"
+            "ingestion/"
+                "test_apify_fetcher.py · API parsing, error handling"
+                "test_qdrant_store.py · Upsert, deduplication"
+            "rag/"
+                "test_retriever.py · Vector search result structure"
+                "test_pipeline.py · Full RAG pipeline (mocked)"
+                "test_chat_history.py · Session isolation, ordering"
+        "dags/"
+            "ingest_jobs_dag.py · Airflow DAG — @hourly, Berlin"
+        "Dockerfile · Streamlit app image (Python 3.11)"
+        "Dockerfile.airflow · Airflow + ingestion dependencies"
+        "docker-compose.yml · Full stack: Airflow + Postgres + App"
+        "requirements.txt · App dependencies"
+        "requirements-ingestion.txt · Ingestion-only dependencies"
+        "requirements-dev.txt · Dev/test dependencies"
 ```
 
 ---
@@ -261,7 +267,7 @@ rag-jobs/
 ## How the RAG Pipeline Works
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["User sends a message"]
     B["Embed message\nqwen3-embedding:8b → 4096-dim vector"]
     C["Query knowledge_base\nretrieve top-5 semantically similar jobs"]
