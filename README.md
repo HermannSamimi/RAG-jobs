@@ -4,8 +4,10 @@ emoji: 💼
 colorFrom: indigo
 colorTo: purple
 sdk: streamlit
-sdk_version: "1.35.0"
+sdk_version: "1.44.1"
 app_file: app.py
+requirements_file: requirements-space.txt
+python_version: "3.11"
 pinned: false
 license: mit
 short_description: RAG job search assistant — Berlin Software Engineer jobs
