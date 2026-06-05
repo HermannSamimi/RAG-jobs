@@ -58,29 +58,25 @@ with st.sidebar:
 def _render_sources(sources: list) -> None:
     if not sources:
         return
-    with st.expander(f"Sources — {len(sources)} job(s) retrieved"):
-        for i, job in enumerate(sources, 1):
-            score = job.get("score", "—")
-            url = job.get("job_url")
+    st.markdown(f"**Sources** — {len(sources)} job(s) retrieved")
+    for i, job in enumerate(sources, 1):
+        score = job.get("score", "—")
+        url = job.get("job_url")
+        title = job.get("title", "N/A")
+        company = job.get("company", "N/A")
+        label = f"{i}. {title} — {company}  (score: {score})"
 
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**{i}. {job.get('title', 'N/A')}** — {job.get('company', 'N/A')}")
-                st.caption(
-                    f"{job.get('location', '')} | "
-                    f"{job.get('seniority_level', '')} | "
-                    f"{job.get('employment_type', '')} | "
-                    f"score: {score}"
-                )
-            with col2:
-                if url:
-                    st.link_button("View job", url, use_container_width=True)
-
-            with st.expander("Job description snippet"):
-                st.text((job.get("description") or "No description available.")[:600] + "…")
-
-            if i < len(sources):
-                st.divider()
+        with st.expander(label, expanded=(i == 1)):
+            st.caption(
+                f"{job.get('location', '')} | "
+                f"{job.get('seniority_level', '')} | "
+                f"{job.get('employment_type', '')}"
+            )
+            if url:
+                st.link_button("View job", url, use_container_width=True)
+            desc = (job.get("description") or "No description available.")[:600]
+            st.markdown("**Description**")
+            st.text(desc + ("…" if len(job.get("description") or "") > 600 else ""))
 
 
 # ── main chat ──────────────────────────────────────────────────────────────────
