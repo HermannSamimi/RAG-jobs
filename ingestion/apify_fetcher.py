@@ -9,7 +9,7 @@ def fetch_jobs(
     title: str = "software engineer",
     country: str = "germany",
     location: str = "berlin",
-    limit: int = 50,
+    limit: int = 10,
     language: str = "en",
     skip: int = 0,
 ) -> Iterator[dict]:
