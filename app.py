@@ -1,3 +1,4 @@
+import base64
 import html
 import uuid
 import streamlit as st
@@ -14,459 +15,403 @@ st.set_page_config(
 
 CUSTOM_CSS = """
 <style>
-    @import url('https://fonts.bunny.net/css?family=jetbrains-sans:400,500,600,700|jetbrains-mono:400,500,600');
+    @import url('https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap');
 
     :root {
-        --font-sans: "JetBrains Sans", system-ui, sans-serif;
-        --font-mono: "JetBrains Mono", ui-monospace, monospace;
-        --bg-0: #000000;
-        --bg-1: #0a0a0a;
-        --bg-2: #141414;
-        --bg-3: #1c1c1c;
-        --surface: rgba(255, 255, 255, 0.04);
-        --surface-hover: rgba(255, 255, 255, 0.07);
-        --border: rgba(255, 255, 255, 0.1);
-        --border-strong: rgba(255, 255, 255, 0.22);
-        --text: #f5f5f5;
-        --text-muted: #a3a3a3;
-        --text-dim: #737373;
-        --accent: #ffffff;
-        --accent-glow: rgba(255, 255, 255, 0.15);
-        --success: #34d399;
-        --radius: 14px;
-        --shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+        --font: "Inter", system-ui, -apple-system, sans-serif;
+        --mono: ui-monospace, "SF Mono", monospace;
+
+        --bg:     #ffffff;
+        --bg-mid: #f7f7f8;
+        --bg-hi:  #f0f0f1;
+
+        --b1: #e4e4e7;
+        --b2: #d4d4d8;
+        --b3: #a1a1aa;
+
+        --ac:    #0891b2;
+        --ac-hi: #06b6d4;
+        --ac-lo: rgba(8,145,178,0.07);
+        --ac-br: rgba(8,145,178,0.2);
+
+        --t1: #18181b;
+        --t2: #52525b;
+        --t3: #a1a1aa;
+
+        --gr:    #16a34a;
+        --gr-lo: rgba(22,163,74,0.07);
+        --gr-br: rgba(22,163,74,0.2);
+
+        --r:  10px;
+        --rl: 14px;
     }
 
+    /* ── base ── */
     .stApp,
-    .stApp p,
-    .stApp span,
-    .stApp label,
-    .stApp button,
-    .stApp textarea,
-    .stApp input,
+    .stApp p, .stApp label,
+    .stApp textarea, .stApp input,
     [data-testid="stMarkdownContainer"],
     [data-testid="stSidebar"] {
-        font-family: var(--font-sans) !important;
-        color: var(--text);
+        font-family: var(--font) !important;
+        color: var(--t1) !important;
     }
+    .stApp span:not([class*="material"]) { font-family: var(--font) !important; }
 
-    .stApp {
-        background:
-            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 255, 255, 0.08) 0%, transparent 55%),
-            radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
-            linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 35%, var(--bg-2) 100%) !important;
-        color: var(--text);
-    }
+    /* buttons: font only — colour set per-type below */
+    .stApp button { font-family: var(--font) !important; }
+
+    .stApp { background: var(--bg) !important; }
 
     .main .block-container,
-    [data-testid="stSidebar"] .block-container {
-        background: transparent;
-    }
+    [data-testid="stSidebar"] .block-container { background: transparent; }
 
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-    }
+    header[data-testid="stHeader"] { background: transparent !important; }
 
     .block-container {
-        padding-top: 2rem;
-        padding-bottom: 7rem;
-        max-width: 920px;
+        padding-top: 2.5rem;
+        padding-bottom: 3rem;
+        max-width: 780px;
     }
 
-    hr {
-        border-color: var(--border) !important;
-    }
+    hr { border-color: var(--b1) !important; }
 
-    /* ── fixed chat input bar ─────────────────────────────────────────── */
-    [data-testid="stBottomBlockContainer"] {
-        background: linear-gradient(
-            180deg,
-            rgba(0, 0, 0, 0) 0%,
-            rgba(0, 0, 0, 0.85) 25%,
-            #000000 100%
-        ) !important;
-        border-top: 1px solid var(--border) !important;
-        box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.8) !important;
-        padding: 1.1rem 1.25rem 1.4rem !important;
-    }
-
-    [data-testid="stBottomBlockContainer"] > div {
-        max-width: 920px;
-        margin: 0 auto;
-    }
-
+    /* ── sidebar ── */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #000000 0%, #0d0d0d 50%, #111111 100%) !important;
-        border-right: 1px solid var(--border) !important;
+        background: var(--bg-mid) !important;
+        border-right: 1px solid var(--b1) !important;
     }
 
-    [data-testid="stSidebar"] .block-container {
-        padding-top: 1.5rem;
-    }
+    [data-testid="stSidebar"] .block-container { padding-top: 2rem; }
 
+    /* kill the sticky bottom bar entirely */
+    [data-testid="stBottomBlockContainer"] { display: none !important; }
+
+    /* ── brand ── */
     .jr-brand {
-        font-family: var(--font-sans);
-        font-size: 1.65rem;
+        font-size: 1.2rem;
         font-weight: 700;
         letter-spacing: -0.02em;
-        background: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin: 0 0 0.25rem 0;
-        line-height: 1.1;
+        color: var(--t1);
+        margin: 0 0 0.2rem;
+        line-height: 1;
     }
+    .jr-brand em { font-style: normal; color: var(--ac); }
 
     .jr-tagline {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin: 0 0 1.5rem 0;
+        font-size: 0.78rem;
+        color: var(--t3);
+        margin: 0 0 2rem;
         line-height: 1.5;
     }
 
-    .jr-hero {
-        background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-        border: 1px solid var(--border);
-        border-radius: calc(var(--radius) + 4px);
-        padding: 2rem 2.25rem;
-        margin-bottom: 1.75rem;
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(12px);
-    }
-
-    .jr-hero h1 {
-        font-family: var(--font-sans);
-        font-size: 2.35rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        margin: 0 0 0.6rem 0;
-        background: linear-gradient(135deg, #ffffff 20%, #d4d4d4 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        line-height: 1.15;
-    }
-
-    .jr-hero p {
-        color: var(--text-muted);
-        font-size: 1.05rem;
-        margin: 0;
-        line-height: 1.6;
-        max-width: 52ch;
-    }
-
-    .jr-pill-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 1.25rem;
-    }
-
-    .jr-pill {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35rem 0.75rem;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-        font-size: 0.78rem;
-        font-weight: 500;
-        letter-spacing: 0.01em;
-    }
-
+    /* ── sidebar labels ── */
     .jr-section-label {
-        font-size: 0.72rem;
+        font-size: 0.64rem;
         font-weight: 600;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: var(--text-dim);
-        margin: 0 0 0.65rem 0;
+        color: var(--t3);
+        margin: 0 0 0.5rem;
     }
 
     .jr-panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1rem 1.1rem;
-        margin-bottom: 1rem;
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
+        padding: 0.85rem 1rem;
+        margin-bottom: 1.5rem;
+        background: var(--bg);
     }
-
-    .jr-panel-title {
-        font-size: 0.92rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 0.35rem 0;
-    }
-
-    .jr-panel-text {
-        font-size: 0.84rem;
-        color: var(--text-muted);
-        margin: 0;
-        line-height: 1.55;
-    }
+    .jr-panel-title { font-size: 0.84rem; font-weight: 600; margin: 0 0 0.2rem; }
+    .jr-panel-text  { font-size: 0.77rem; color: var(--t2); margin: 0; line-height: 1.5; }
 
     .jr-session-id {
-        font-family: var(--font-mono);
-        font-size: 0.78rem;
-        color: #d4d4d4;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid var(--border);
-        padding: 0.45rem 0.6rem;
-        border-radius: 8px;
+        font-family: var(--mono);
+        font-size: 0.71rem;
+        color: var(--t3);
+        border: 1px solid var(--b1);
+        padding: 0.38rem 0.65rem;
+        border-radius: var(--r);
         word-break: break-all;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.6rem;
+        background: var(--bg);
     }
 
-    .jr-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        font-size: 0.82rem;
-        color: var(--text-muted);
-    }
+    .jr-stack { display: flex; flex-direction: column; gap: 0.28rem; font-size: 0.77rem; color: var(--t2); }
+    .jr-stack strong { color: var(--t1); font-weight: 500; }
 
-    .jr-stack strong {
-        color: var(--text);
-        font-weight: 600;
+    /* ── hero ── */
+    .jr-hero {
+        padding: 2rem 0 2rem;
+        border-bottom: 1px solid var(--b1);
+        margin-bottom: 2rem;
     }
-
-    .jr-suggestions-title {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 0.85rem 0;
+    .jr-hero h1 {
+        font-size: 2.4rem;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        margin: 0 0 0.65rem;
+        color: var(--t1);
+        line-height: 1.1;
     }
-
-    div[data-testid="stChatMessage"] {
-        background: transparent;
-        border: none;
-        padding: 0.5rem 0;
-    }
-
-    div[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
-        background: linear-gradient(145deg, #1a1a1a 0%, #111111 100%);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1.05rem 1.2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        color: var(--text);
-    }
-
-    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stMarkdownContainer"] {
-        background: linear-gradient(145deg, #262626 0%, #1a1a1a 100%);
-        border: 1px solid var(--border-strong);
-        color: #ffffff;
-    }
-
-    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stMarkdownContainer"] {
-        background: linear-gradient(145deg, #141414 0%, #0a0a0a 100%);
-        border: 1px solid var(--border);
-        color: #e5e5e5;
-    }
-
-    [data-testid="stChatMessageAvatar"] {
-        background: #262626 !important;
-        border: 1px solid var(--border-strong) !important;
-        color: #ffffff !important;
-    }
-
-    .jr-sources-header {
-        font-size: 0.82rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--text-dim);
-        margin: 1.25rem 0 0.75rem 0;
-    }
-
-    .jr-source-card {
-        background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1rem 1.15rem;
-        margin-bottom: 0.65rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .jr-source-card:hover {
-        border-color: var(--border-strong);
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
-    }
-
-    .jr-source-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 0.2rem 0;
-        line-height: 1.35;
-    }
-
-    .jr-source-company {
-        font-size: 0.88rem;
-        color: #d4d4d4;
-        font-weight: 500;
-        margin: 0 0 0.65rem 0;
-    }
-
-    .jr-meta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .jr-meta-tag {
-        font-size: 0.74rem;
-        font-weight: 500;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: 0.2rem 0.55rem;
-    }
-
-    .jr-score {
-        font-size: 0.74rem;
-        font-weight: 600;
-        color: var(--success);
-        background: rgba(52, 211, 153, 0.1);
-        border: 1px solid rgba(52, 211, 153, 0.25);
-        border-radius: 999px;
-        padding: 0.2rem 0.55rem;
-    }
-
-    .jr-source-desc {
-        font-size: 0.86rem;
-        color: var(--text-muted);
-        line-height: 1.6;
+    .jr-hero p {
+        font-size: 0.97rem;
+        color: var(--t2);
         margin: 0;
+        line-height: 1.7;
+        max-width: 46ch;
+    }
+    .jr-pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.1rem; }
+    .jr-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        background: var(--ac-lo);
+        border: 1px solid var(--ac-br);
+        color: var(--ac);
+        font-size: 0.72rem;
+        font-weight: 500;
     }
 
-    div[data-testid="stChatInput"] {
-        padding: 0 !important;
-        background: transparent !important;
-    }
-
-    div[data-testid="stChatInput"] > div {
-        background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%) !important;
-        border: 1.5px solid var(--border-strong) !important;
-        border-radius: 18px !important;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
-        padding: 0.35rem 0.5rem 0.35rem 1rem !important;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    div[data-testid="stChatInput"] > div:focus-within {
-        border-color: rgba(255, 255, 255, 0.45) !important;
-        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7), 0 0 0 3px var(--accent-glow) !important;
-    }
-
-    div[data-testid="stChatInput"] textarea {
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        color: #ffffff !important;
-        font-size: 1rem !important;
-        font-weight: 500 !important;
-        min-height: 2.6rem !important;
-        padding: 0.65rem 0 !important;
-        caret-color: #ffffff !important;
-    }
-
-    div[data-testid="stChatInput"] textarea::placeholder {
-        color: #737373 !important;
-        opacity: 1 !important;
-        font-weight: 400 !important;
-    }
-
-    div[data-testid="stChatInput"] textarea:focus {
-        outline: none !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    div[data-testid="stChatInputSubmitButton"] button,
-    [data-testid="stChatInputSubmitButton"] {
-        background: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%) !important;
-        border: none !important;
-        border-radius: 12px !important;
-        color: #000000 !important;
-        min-width: 2.75rem !important;
-        min-height: 2.75rem !important;
-        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.15) !important;
-    }
-
-    div[data-testid="stChatInputSubmitButton"] button:hover,
-    [data-testid="stChatInputSubmitButton"]:hover {
-        background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%) !important;
-        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25) !important;
-    }
-
-    div[data-testid="stChatInputSubmitButton"] button svg,
-    [data-testid="stChatInputSubmitButton"] svg {
-        fill: #000000 !important;
-        stroke: #000000 !important;
+    /* ── suggestions ── */
+    .jr-suggestions-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--t3);
+        margin: 0 0 0.6rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
     }
 
     .stButton > button {
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: linear-gradient(145deg, #1a1a1a 0%, #111111 100%);
-        color: var(--text);
-        font-weight: 500;
-        font-size: 0.86rem;
-        padding: 0.55rem 0.85rem;
-        transition: all 0.15s ease;
+        border-radius: var(--r);
+        border: 1px solid var(--b1);
+        background: var(--bg);
+        color: var(--t2) !important;
+        font-weight: 400;
+        font-size: 0.83rem;
+        padding: 0.55rem 0.9rem;
+        transition: border-color 0.14s, color 0.14s, background 0.14s;
+        box-shadow: none;
+        text-align: left;
+        line-height: 1.4;
+    }
+    .stButton > button:hover {
+        border-color: var(--b2);
+        background: var(--bg-mid);
+        color: var(--t1) !important;
         box-shadow: none;
     }
 
-    .stButton > button:hover {
-        border-color: var(--border-strong);
-        background: linear-gradient(145deg, #262626 0%, #1a1a1a 100%);
-        color: #ffffff;
-    }
-
+    /* sidebar primary button — target button AND all inner p/span Streamlit injects */
     [data-testid="stSidebar"] .stButton > button[kind="primary"],
-    .jr-primary-btn .stButton > button {
-        background: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%);
-        border-color: transparent;
-        color: #000000;
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] *,
+    .jr-primary-btn .stButton > button,
+    .jr-primary-btn .stButton > button * {
+        background: var(--t1) !important;
+        border-color: transparent !important;
+        color: #fff !important;
         font-weight: 600;
+        box-shadow: none;
     }
-
     [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover,
-    .jr-primary-btn .stButton > button:hover {
-        background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
-        color: #000000;
+    [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover *,
+    .jr-primary-btn .stButton > button:hover,
+    .jr-primary-btn .stButton > button:hover * {
+        background: var(--t2) !important;
+        color: #fff !important;
+        border-color: transparent !important;
     }
 
+    /* ── chat messages ── */
+    div[data-testid="stChatMessage"] { background: transparent; border: none; padding: 0.3rem 0; }
+
+    div[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+        border-radius: var(--rl);
+        padding: 0.85rem 1.05rem;
+        font-size: 0.92rem;
+        line-height: 1.72;
+    }
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stMarkdownContainer"] {
+        background: var(--bg-hi);
+        border: 1px solid var(--b1);
+    }
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stMarkdownContainer"] {
+        background: var(--bg);
+        border: 1px solid var(--b1);
+    }
+    [data-testid="stChatMessageAvatar"] {
+        background: var(--bg-hi) !important;
+        border: 1px solid var(--b1) !important;
+    }
+
+    /* ── sources ── */
+    .jr-sources-header {
+        font-size: 0.67rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--t3);
+        margin: 1.5rem 0 0.65rem;
+    }
+    .jr-source-card {
+        border: 1px solid var(--b1);
+        border-radius: var(--rl);
+        padding: 0.95rem 1.1rem;
+        margin-bottom: 0.45rem;
+        background: var(--bg);
+        transition: border-color 0.14s;
+    }
+    .jr-source-card:hover { border-color: var(--b2); }
+
+    .jr-source-title  { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.12rem; }
+    .jr-source-company { font-size: 0.8rem; color: var(--ac); font-weight: 500; margin: 0 0 0.55rem; }
+
+    .jr-meta-row { display: flex; flex-wrap: wrap; gap: 0.28rem; margin-bottom: 0.6rem; }
+    .jr-meta-tag {
+        font-size: 0.7rem;
+        color: var(--t2);
+        border: 1px solid var(--b1);
+        border-radius: 999px;
+        padding: 0.13rem 0.48rem;
+    }
+    .jr-score {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--gr);
+        background: var(--gr-lo);
+        border: 1px solid var(--gr-br);
+        border-radius: 999px;
+        padding: 0.13rem 0.48rem;
+    }
+    .jr-source-desc { font-size: 0.81rem; color: var(--t2); line-height: 1.6; margin: 0; }
+
+    /* link buttons */
     .stLinkButton > a {
-        border-radius: 10px !important;
+        border-radius: var(--r) !important;
         font-weight: 500 !important;
-        font-size: 0.84rem !important;
-        background: rgba(255, 255, 255, 0.08) !important;
-        border: 1px solid var(--border) !important;
-        color: var(--text) !important;
+        font-size: 0.77rem !important;
+        background: var(--bg) !important;
+        border: 1px solid var(--b1) !important;
+        color: var(--t2) !important;
+        transition: border-color 0.14s, color 0.14s !important;
+    }
+    .stLinkButton > a:hover { border-color: var(--b2) !important; color: var(--t1) !important; }
+
+    /* ── chat form ── */
+    [data-testid="stForm"] {
+        border: 1px solid var(--b1) !important;
+        border-radius: 18px !important;
+        padding: 8px 12px 8px 18px !important;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.06) !important;
+        background: var(--bg) !important;
+        margin-top: 1.5rem !important;
     }
 
-    .stLinkButton > a:hover {
-        background: rgba(255, 255, 255, 0.14) !important;
-        border-color: var(--border-strong) !important;
+    [data-testid="stForm"] > div,
+    [data-testid="stForm"] > div > div { border: none !important; box-shadow: none !important; }
+
+    /* align the columns row so button stays vertically centred */
+    [data-testid="stForm"] [data-testid="stHorizontalBlock"] {
+        align-items: center !important;
+        gap: 0 !important;
+    }
+    [data-testid="stForm"] [data-testid="column"] { padding: 0 4px 0 0 !important; }
+    [data-testid="stForm"] [data-testid="column"]:last-child { padding: 0 !important; }
+
+    [data-testid="stForm"] textarea {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        font-size: 0.93rem !important;
+        color: var(--t1) !important;
+        resize: none !important;
+        padding: 4px 0 !important;
+        line-height: 1.55 !important;
+        font-family: var(--font) !important;
+    }
+    [data-testid="stForm"] textarea::placeholder { color: var(--t3) !important; }
+    [data-testid="stForm"] textarea:focus { outline: none !important; box-shadow: none !important; }
+
+    /* send button — right-aligned, square */
+    [data-testid="stFormSubmitButton"] {
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
     }
 
+    [data-testid="stFormSubmitButton"] button,
+    [data-testid="stFormSubmitButton"] button * {
+        background: var(--t1) !important;
+        color: #fff !important;
+        border-radius: 10px !important;
+        border: none !important;
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 0 !important;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+        transition: background 0.14s !important;
+        line-height: 1 !important;
+    }
+    [data-testid="stFormSubmitButton"] button:hover,
+    [data-testid="stFormSubmitButton"] button:hover * { background: var(--t2) !important; }
+
+    /* alerts */
     [data-testid="stAlert"] {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid var(--border) !important;
-        color: var(--text) !important;
+        background: var(--bg-mid) !important;
+        border: 1px solid var(--b1) !important;
+        border-radius: var(--r) !important;
+        color: var(--t1) !important;
     }
 
-    #MainMenu, footer, header[data-testid="stHeader"] {
-        visibility: visible;
-    }
+    #MainMenu, footer, header[data-testid="stHeader"] { visibility: visible; }
 </style>
 """
+
+
+def _svg_b64(path: str, replacements: dict | None = None) -> str:
+    with open(path, "rb") as f:
+        data = f.read()
+    for old, new in (replacements or {}).items():
+        data = data.replace(old.encode(), new.encode())
+    return base64.b64encode(data).decode()
+
+
+_SEND_B64 = _svg_b64("send-svgrepo-com.svg", {'stroke="#000000"': 'stroke="#ffffff"'})
+_SIDEBAR_B64 = _svg_b64("side-list-svgrepo-com.svg")
+
+_ICON_CSS_RAW = """<style>
+    /* ── send button: SVG icon ── */
+    [data-testid="stFormSubmitButton"] button {
+        background-image: url("data:image/svg+xml;base64,__SEND__") !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 18px 18px !important;
+        color: transparent !important;
+        font-size: 0 !important;
+    }
+
+    /* ── sidebar toggle: SVG icon (covers both open and collapsed states) ── */
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="collapsedControl"] span,
+    button[data-testid="baseButton-headerNoPadding"] span {
+        font-size: 0 !important;
+        color: transparent !important;
+        background-image: url("data:image/svg+xml;base64,__SIDEBAR__") !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: 18px 18px !important;
+        width: 22px !important;
+        height: 22px !important;
+        display: inline-block !important;
+    }
+</style>"""
+
+ICON_CSS = _ICON_CSS_RAW.replace("__SEND__", _SEND_B64).replace("__SIDEBAR__", _SIDEBAR_B64)
 
 SUGGESTIONS = [
     "Which companies are actively hiring right now?",
@@ -490,7 +435,7 @@ def _render_sources(sources: list) -> None:
     if not sources:
         return
     st.markdown(
-        f'<p class="jr-sources-header">Retrieved sources · {len(sources)}</p>',
+        f'<p class="jr-sources-header">Sources · {len(sources)}</p>',
         unsafe_allow_html=True,
     )
     for job in sources:
@@ -501,8 +446,7 @@ def _render_sources(sources: list) -> None:
         seniority = html.escape(job.get("seniority_level") or "")
         employment = html.escape(job.get("employment_type") or "")
         description = job.get("description") or "No description available."
-        truncated = len(description) > 420
-        desc_preview = html.escape(description[:420] + ("…" if truncated else ""))
+        desc_preview = html.escape(description[:400] + ("…" if len(description) > 400 else ""))
 
         tags_html = ""
         if location:
@@ -511,7 +455,7 @@ def _render_sources(sources: list) -> None:
             tags_html += f'<span class="jr-meta-tag">{seniority}</span>'
         if employment:
             tags_html += f'<span class="jr-meta-tag">{employment}</span>'
-        tags_html += f'<span class="jr-score">Match {score}</span>'
+        tags_html += f'<span class="jr-score">{score}</span>'
 
         st.markdown(
             f"""
@@ -525,14 +469,14 @@ def _render_sources(sources: list) -> None:
             unsafe_allow_html=True,
         )
         if job.get("job_url"):
-            st.link_button("Open listing", job["job_url"], use_container_width=False)
+            st.link_button("View listing →", job["job_url"], use_container_width=False)
 
 
 def _render_sidebar() -> None:
     with st.sidebar:
-        st.markdown('<p class="jr-brand">JobRAG</p>', unsafe_allow_html=True)
         st.markdown(
-            '<p class="jr-tagline">Semantic search over live job listings, grounded answers from retrieved context.</p>',
+            '<p class="jr-brand">Job<em>RAG</em></p>'
+            '<p class="jr-tagline">Semantic search over live job listings.</p>',
             unsafe_allow_html=True,
         )
 
@@ -549,23 +493,23 @@ def _render_sidebar() -> None:
 
         st.markdown('<p class="jr-section-label">Session</p>', unsafe_allow_html=True)
         st.markdown(
-            f'<div class="jr-session-id">{st.session_state.session_id[:16]}…</div>',
+            f'<div class="jr-session-id">{st.session_state.session_id[:20]}…</div>',
             unsafe_allow_html=True,
         )
         st.markdown('<div class="jr-primary-btn">', unsafe_allow_html=True)
-        if st.button("Start new session", use_container_width=True, type="primary"):
+        if st.button("New session", use_container_width=True, type="primary"):
             st.session_state.session_id = str(uuid.uuid4())
             st.session_state.messages = []
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown('<p class="jr-section-label">Stack</p>', unsafe_allow_html=True)
+        st.markdown('<p class="jr-section-label" style="margin-top:1.5rem">Stack</p>', unsafe_allow_html=True)
         st.markdown(
             """
             <div class="jr-stack">
-                <span><strong>Vector store</strong> Qdrant Cloud</span>
-                <span><strong>Embeddings</strong> qwen3-embedding:8b</span>
-                <span><strong>Chat model</strong> gemma3:27b</span>
+                <span><strong>Vector store</strong>&ensp;Qdrant Cloud</span>
+                <span><strong>Embeddings</strong>&ensp;qwen3-embedding:8b</span>
+                <span><strong>Chat model</strong>&ensp;gemma3:27b</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -577,14 +521,12 @@ def _render_hero() -> None:
         """
         <div class="jr-hero">
             <h1>Find the right role, faster.</h1>
-            <p>
-                Ask natural-language questions about Software Engineer openings in Berlin.
-                Every answer is grounded in retrieved listings from the knowledge base.
-            </p>
+            <p>Ask natural-language questions about Software Engineer openings in Berlin.
+            Every answer is grounded in retrieved listings.</p>
             <div class="jr-pill-row">
                 <span class="jr-pill">Berlin, Germany</span>
                 <span class="jr-pill">Software Engineer</span>
-                <span class="jr-pill">RAG-powered answers</span>
+                <span class="jr-pill">RAG-powered</span>
             </div>
         </div>
         """,
@@ -593,7 +535,7 @@ def _render_hero() -> None:
 
 
 def _render_suggestions() -> None:
-    st.markdown('<p class="jr-suggestions-title">Suggested questions</p>', unsafe_allow_html=True)
+    st.markdown('<p class="jr-suggestions-title">Try asking</p>', unsafe_allow_html=True)
     cols = st.columns(2)
     for i, suggestion in enumerate(SUGGESTIONS):
         with cols[i % 2]:
@@ -603,6 +545,7 @@ def _render_suggestions() -> None:
 
 
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+st.markdown(ICON_CSS, unsafe_allow_html=True)
 
 try:
     _init_db()
@@ -630,7 +573,20 @@ for msg in st.session_state.messages:
             _render_sources(msg["sources"])
 
 prefill = st.session_state.pop("_prefill", None)
-user_input = st.chat_input("Ask about roles, skills, companies, or requirements…") or prefill
+
+with st.form("chat_form", clear_on_submit=True):
+    col_text, col_btn = st.columns([15, 1])
+    with col_text:
+        user_text = st.text_area(
+            "",
+            placeholder="Ask about roles, skills, companies, or requirements…",
+            label_visibility="collapsed",
+            height=68,
+        )
+    with col_btn:
+        submitted = st.form_submit_button("↑", use_container_width=False)
+
+user_input = prefill or (user_text.strip() if submitted and user_text.strip() else None)
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input, "sources": None})
@@ -647,7 +603,7 @@ if user_input:
             response_text = st.write_stream(stream)
             _render_sources(sources)
         except Exception as e:
-            response_text = f"Something went wrong while generating a response: {e}"
+            response_text = f"Something went wrong: {e}"
             sources = []
             st.error(response_text)
 
