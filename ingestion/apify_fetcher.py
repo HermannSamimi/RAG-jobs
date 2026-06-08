@@ -25,7 +25,7 @@ def fetch_jobs(
         "sort_field": "datetime_from",
         "sort_direction": -1,
     }
-    run = client.actor(ACTOR_ID).call(run_input=run_input)
+    run = client.actor(ACTOR_ID).call(run_input=run_input, max_items=limit)
     # apify_client <2 returns a dict, >=2 returns a Run object
     dataset_id = run["defaultDatasetId"] if isinstance(run, dict) else run.default_dataset_id
     yield from client.dataset(dataset_id).iterate_items()
