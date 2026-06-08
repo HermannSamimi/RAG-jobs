@@ -14,42 +14,90 @@ st.set_page_config(
 
 CUSTOM_CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display&display=swap');
+    @import url('https://fonts.bunny.net/css?family=jetbrains-sans:400,500,600,700|jetbrains-mono:400,500,600');
 
     :root {
-        --bg: #f6f7fb;
-        --surface: #ffffff;
-        --surface-muted: #f1f3f9;
-        --border: #e4e8f1;
-        --text: #0f172a;
-        --text-muted: #64748b;
-        --accent: #4f46e5;
-        --accent-soft: #eef2ff;
-        --accent-hover: #4338ca;
-        --success: #059669;
+        --font-sans: "JetBrains Sans", system-ui, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, monospace;
+        --bg-0: #000000;
+        --bg-1: #0a0a0a;
+        --bg-2: #141414;
+        --bg-3: #1c1c1c;
+        --surface: rgba(255, 255, 255, 0.04);
+        --surface-hover: rgba(255, 255, 255, 0.07);
+        --border: rgba(255, 255, 255, 0.1);
+        --border-strong: rgba(255, 255, 255, 0.22);
+        --text: #f5f5f5;
+        --text-muted: #a3a3a3;
+        --text-dim: #737373;
+        --accent: #ffffff;
+        --accent-glow: rgba(255, 255, 255, 0.15);
+        --success: #34d399;
         --radius: 14px;
-        --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+        --shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
     }
 
-    .stApp {
-        background: linear-gradient(180deg, #f8f9fc 0%, var(--bg) 220px, var(--bg) 100%);
-        font-family: "DM Sans", system-ui, sans-serif;
+    .stApp,
+    .stApp p,
+    .stApp span,
+    .stApp label,
+    .stApp button,
+    .stApp textarea,
+    .stApp input,
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stSidebar"] {
+        font-family: var(--font-sans) !important;
         color: var(--text);
     }
 
-    header[data-testid="stHeader"] {
+    .stApp {
+        background:
+            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 255, 255, 0.08) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+            linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 35%, var(--bg-2) 100%) !important;
+        color: var(--text);
+    }
+
+    .main .block-container,
+    [data-testid="stSidebar"] .block-container {
         background: transparent;
+    }
+
+    header[data-testid="stHeader"] {
+        background: transparent !important;
     }
 
     .block-container {
         padding-top: 2rem;
-        padding-bottom: 3rem;
+        padding-bottom: 7rem;
         max-width: 920px;
     }
 
+    hr {
+        border-color: var(--border) !important;
+    }
+
+    /* ── fixed chat input bar ─────────────────────────────────────────── */
+    [data-testid="stBottomBlockContainer"] {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0.85) 25%,
+            #000000 100%
+        ) !important;
+        border-top: 1px solid var(--border) !important;
+        box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.8) !important;
+        padding: 1.1rem 1.25rem 1.4rem !important;
+    }
+
+    [data-testid="stBottomBlockContainer"] > div {
+        max-width: 920px;
+        margin: 0 auto;
+    }
+
     [data-testid="stSidebar"] {
-        background: var(--surface);
-        border-right: 1px solid var(--border);
+        background: linear-gradient(180deg, #000000 0%, #0d0d0d 50%, #111111 100%) !important;
+        border-right: 1px solid var(--border) !important;
     }
 
     [data-testid="stSidebar"] .block-container {
@@ -57,11 +105,14 @@ CUSTOM_CSS = """
     }
 
     .jr-brand {
-        font-family: "DM Serif Display", Georgia, serif;
+        font-family: var(--font-sans);
         font-size: 1.65rem;
-        font-weight: 400;
+        font-weight: 700;
         letter-spacing: -0.02em;
-        color: var(--text);
+        background: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin: 0 0 0.25rem 0;
         line-height: 1.1;
     }
@@ -74,21 +125,25 @@ CUSTOM_CSS = """
     }
 
     .jr-hero {
-        background: var(--surface);
+        background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
         border: 1px solid var(--border);
         border-radius: calc(var(--radius) + 4px);
         padding: 2rem 2.25rem;
         margin-bottom: 1.75rem;
         box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
     }
 
     .jr-hero h1 {
-        font-family: "DM Serif Display", Georgia, serif;
+        font-family: var(--font-sans);
         font-size: 2.35rem;
-        font-weight: 400;
+        font-weight: 700;
         letter-spacing: -0.03em;
         margin: 0 0 0.6rem 0;
-        color: var(--text);
+        background: linear-gradient(135deg, #ffffff 20%, #d4d4d4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         line-height: 1.15;
     }
 
@@ -112,7 +167,7 @@ CUSTOM_CSS = """
         align-items: center;
         padding: 0.35rem 0.75rem;
         border-radius: 999px;
-        background: var(--surface-muted);
+        background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--border);
         color: var(--text-muted);
         font-size: 0.78rem;
@@ -125,12 +180,12 @@ CUSTOM_CSS = """
         font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--text-dim);
         margin: 0 0 0.65rem 0;
     }
 
     .jr-panel {
-        background: var(--surface-muted);
+        background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         padding: 1rem 1.1rem;
@@ -152,10 +207,11 @@ CUSTOM_CSS = """
     }
 
     .jr-session-id {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-family: var(--font-mono);
         font-size: 0.78rem;
-        color: var(--accent);
-        background: var(--accent-soft);
+        color: #d4d4d4;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border);
         padding: 0.45rem 0.6rem;
         border-radius: 8px;
         word-break: break-all;
@@ -185,21 +241,34 @@ CUSTOM_CSS = """
     div[data-testid="stChatMessage"] {
         background: transparent;
         border: none;
-        padding: 0.35rem 0;
+        padding: 0.5rem 0;
     }
 
     div[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
-        background: var(--surface);
+        background: linear-gradient(145deg, #1a1a1a 0%, #111111 100%);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 1rem 1.15rem;
-        box-shadow: var(--shadow);
+        padding: 1.05rem 1.2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        color: var(--text);
     }
 
-    div[data-testid="stChatMessage"][data-testid*="user"] [data-testid="stMarkdownContainer"],
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) [data-testid="stMarkdownContainer"] {
-        background: var(--accent-soft);
-        border-color: #c7d2fe;
+        background: linear-gradient(145deg, #262626 0%, #1a1a1a 100%);
+        border: 1px solid var(--border-strong);
+        color: #ffffff;
+    }
+
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) [data-testid="stMarkdownContainer"] {
+        background: linear-gradient(145deg, #141414 0%, #0a0a0a 100%);
+        border: 1px solid var(--border);
+        color: #e5e5e5;
+    }
+
+    [data-testid="stChatMessageAvatar"] {
+        background: #262626 !important;
+        border: 1px solid var(--border-strong) !important;
+        color: #ffffff !important;
     }
 
     .jr-sources-header {
@@ -207,23 +276,23 @@ CUSTOM_CSS = """
         font-weight: 600;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--text-dim);
         margin: 1.25rem 0 0.75rem 0;
     }
 
     .jr-source-card {
-        background: var(--surface);
+        background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         padding: 1rem 1.15rem;
         margin-bottom: 0.65rem;
-        box-shadow: var(--shadow);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
     .jr-source-card:hover {
-        border-color: #c7d2fe;
-        box-shadow: 0 4px 18px rgba(79, 70, 229, 0.08);
+        border-color: var(--border-strong);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
     }
 
     .jr-source-title {
@@ -236,7 +305,7 @@ CUSTOM_CSS = """
 
     .jr-source-company {
         font-size: 0.88rem;
-        color: var(--accent);
+        color: #d4d4d4;
         font-weight: 500;
         margin: 0 0 0.65rem 0;
     }
@@ -252,7 +321,7 @@ CUSTOM_CSS = """
         font-size: 0.74rem;
         font-weight: 500;
         color: var(--text-muted);
-        background: var(--surface-muted);
+        background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--border);
         border-radius: 999px;
         padding: 0.2rem 0.55rem;
@@ -262,8 +331,8 @@ CUSTOM_CSS = """
         font-size: 0.74rem;
         font-weight: 600;
         color: var(--success);
-        background: #ecfdf5;
-        border: 1px solid #a7f3d0;
+        background: rgba(52, 211, 153, 0.1);
+        border: 1px solid rgba(52, 211, 153, 0.25);
         border-radius: 999px;
         padding: 0.2rem 0.55rem;
     }
@@ -276,25 +345,75 @@ CUSTOM_CSS = """
     }
 
     div[data-testid="stChatInput"] {
-        padding-bottom: 1rem;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    div[data-testid="stChatInput"] > div {
+        background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%) !important;
+        border: 1.5px solid var(--border-strong) !important;
+        border-radius: 18px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+        padding: 0.35rem 0.5rem 0.35rem 1rem !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    div[data-testid="stChatInput"] > div:focus-within {
+        border-color: rgba(255, 255, 255, 0.45) !important;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7), 0 0 0 3px var(--accent-glow) !important;
     }
 
     div[data-testid="stChatInput"] textarea {
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--surface);
-        box-shadow: var(--shadow);
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: #ffffff !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        min-height: 2.6rem !important;
+        padding: 0.65rem 0 !important;
+        caret-color: #ffffff !important;
+    }
+
+    div[data-testid="stChatInput"] textarea::placeholder {
+        color: #737373 !important;
+        opacity: 1 !important;
+        font-weight: 400 !important;
     }
 
     div[data-testid="stChatInput"] textarea:focus {
-        border-color: #a5b4fc;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    div[data-testid="stChatInputSubmitButton"] button,
+    [data-testid="stChatInputSubmitButton"] {
+        background: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%) !important;
+        border: none !important;
+        border-radius: 12px !important;
+        color: #000000 !important;
+        min-width: 2.75rem !important;
+        min-height: 2.75rem !important;
+        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.15) !important;
+    }
+
+    div[data-testid="stChatInputSubmitButton"] button:hover,
+    [data-testid="stChatInputSubmitButton"]:hover {
+        background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%) !important;
+        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25) !important;
+    }
+
+    div[data-testid="stChatInputSubmitButton"] button svg,
+    [data-testid="stChatInputSubmitButton"] svg {
+        fill: #000000 !important;
+        stroke: #000000 !important;
     }
 
     .stButton > button {
         border-radius: 10px;
         border: 1px solid var(--border);
-        background: var(--surface);
+        background: linear-gradient(145deg, #1a1a1a 0%, #111111 100%);
         color: var(--text);
         font-weight: 500;
         font-size: 0.86rem;
@@ -304,29 +423,43 @@ CUSTOM_CSS = """
     }
 
     .stButton > button:hover {
-        border-color: #a5b4fc;
-        background: var(--accent-soft);
-        color: var(--accent-hover);
+        border-color: var(--border-strong);
+        background: linear-gradient(145deg, #262626 0%, #1a1a1a 100%);
+        color: #ffffff;
     }
 
     [data-testid="stSidebar"] .stButton > button[kind="primary"],
     .jr-primary-btn .stButton > button {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: white;
+        background: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%);
+        border-color: transparent;
+        color: #000000;
+        font-weight: 600;
     }
 
     [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover,
     .jr-primary-btn .stButton > button:hover {
-        background: var(--accent-hover);
-        border-color: var(--accent-hover);
-        color: white;
+        background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+        color: #000000;
     }
 
     .stLinkButton > a {
         border-radius: 10px !important;
         font-weight: 500 !important;
         font-size: 0.84rem !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
+    }
+
+    .stLinkButton > a:hover {
+        background: rgba(255, 255, 255, 0.14) !important;
+        border-color: var(--border-strong) !important;
+    }
+
+    [data-testid="stAlert"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
     }
 
     #MainMenu, footer, header[data-testid="stHeader"] {
