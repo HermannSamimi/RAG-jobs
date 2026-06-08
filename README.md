@@ -982,7 +982,7 @@ Portfolio project demonstrating end-to-end data engineering: pipeline orchestrat
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-Profile-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/HermannS11)
 
 ---
-
+<!-- 
 ## Infrastructure Partner
 
 LLM inference for this project — **embeddings** (`qwen3-embedding:8b`) and **chat completions** (`gemma3:27b`) — runs on infrastructure provided by **[Tempico Labs](https://tempico.com)**.
@@ -997,4 +997,4 @@ LLM inference for this project — **embeddings** (`qwen3-embedding:8b`) and **c
 
 [![Powered by Tempico Labs](https://img.shields.io/badge/Powered%20by-Tempico%20Labs-111827?style=for-the-badge)](https://tempico.com)
 
-> **Interested in similar infrastructure?** Explore [Tempico Labs PaaS](https://tempico.com), [GPU-accelerated computing](https://tempico.com), and [DevOps / migration support](https://tempico.com) for your own AI and data projects.
+> **Interested in similar infrastructure?** Explore [Tempico Labs PaaS](https://tempico.com), [GPU-accelerated computing](https://tempico.com), and [DevOps / migration support](https://tempico.com) for your own AI and data projects. -->
