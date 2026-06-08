@@ -14,3 +14,17 @@ build/
 .mypy_cache/
 .ruff_cache/
 scripts/paste-on-server.sh
+.cache/
+.codeium/
+.cursor-server/
+.cursor/
+.codex/
+.cache/
+.local/
+.docker/
+.dotnet/
+.jupyter/
+.ssh/
+.streamlit/
+.vscode-server/
+.ipython/

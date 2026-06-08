@@ -23,7 +23,7 @@ run_input = {
 }
 
 # Run the Actor and wait for it to finish
-run = client.actor("3HJWd9KfGyItAD5N9").call(run_input=run_input)
+run = client.actor("3HJWd9KfGyItAD5N9").call(run_input=run_input, max_items=run_input["limit"])
 
 # Fetch and print Actor results from the run's dataset (if there are any)
 for item in client.dataset(run["defaultDatasetId"]).iterate_items():
