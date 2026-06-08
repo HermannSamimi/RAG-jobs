@@ -28,3 +28,4 @@ scripts/paste-on-server.sh
 .streamlit/
 .vscode-server/
 .ipython/
+test.py
